@@ -1,249 +1,245 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Resizer (Client-Side)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Resizer (Client-Side)</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
 
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 450px;
-        }
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 450px;
+    margin: auto;
+    flex: 1;
+}
 
-        h2 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 25px;
-        }
+h2 {
+    text-align: center;
+    margin-bottom: 25px;
+}
 
-        label {
-            display: block;
-            margin-top: 15px;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
+label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
 
-        input[type="number"],
-        input[type="file"],
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
+input[type="file"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
 
-        .info-box {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-size: 0.9em;
-        }
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
 
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+button:disabled {
+    background-color: #9cbddd;
+}
 
-        button:disabled {
-            background-color: #9cbddd;
-            cursor: not-allowed;
-        }
+.info-box {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
 
-        .error {
-            color: red;
-            font-weight: bold;
-            margin-top: 10px;
-            text-align: center;
-        }
-    </style>
+.error {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.warning {
+    color: orange;
+    text-align: center;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+footer {
+    text-align: center;
+    padding: 15px;
+    background-color: #333;
+}
+
+footer a {
+    color: yellow;
+    text-decoration: none;
+    font-weight: bold;
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
-    <h2>📷 Image Resizer</h2>
+<h2>📷 Image Resizer</h2>
 
-    <form id="resizeForm">
+<form id="resizeForm">
 
-        <label>1. Επιλέξτε εικόνα (PNG / JPEG):</label>
-        <input type="file" id="imageFile" accept="image/png, image/jpeg" required>
+<label>1. Επιλέξτε εικόνα (PNG / JPEG):</label>
+<input type="file" id="imageFile" accept="image/png, image/jpeg">
 
-        <div class="info-box">
-            <strong>Αρχικές διαστάσεις:</strong>
-            <span id="originalDims">---</span>
-        </div>
+<div class="info-box">
+<strong>Αρχικές διαστάσεις:</strong>
+<span id="originalDims">---</span>
+</div>
 
-        <label>2. Προτεινόμενες διαστάσεις:</label>
-        <select id="presetSizes">
-            <option value="">-- Χειροκίνητη εισαγωγή --</option>
+<label>2. Προτεινόμενες διαστάσεις:</label>
+<select id="presetSizes">
+<option value="">-- Χειροκίνητη εισαγωγή --</option>
+<option value="1240x1754">A4 Print – 1240 × 1754</option>
+<option value="2480x3508">A4 Print HQ – 2480 × 3508</option>
+</select>
 
-            <optgroup label="🖥 Οθόνη / Web">
-                <option value="595x842">A4 Web – 595 × 842 px</option>
-                <option value="794x1123">A4 Web HD – 794 × 1123 px</option>
-            </optgroup>
+<label>3. Νέο πλάτος (px):</label>
+<input type="number" id="newWidth" value="1024" min="1">
 
-            <optgroup label="🖨 Εκτύπωση">
-                <option value="1240x1754">A4 Print – 1240 × 1754 px</option>
-                <option value="2480x3508">A4 Print HQ – 2480 × 3508 px</option>
-            </optgroup>
-        </select>
+<label>4. Νέο ύψος (px):</label>
+<input type="number" id="newHeight" value="1536" min="1">
 
-        <label>3. Νέο πλάτος (pixels):</label>
-        <input type="number" id="newWidth" value="1024" min="1" required>
+<label>
+<input type="checkbox" id="lockRatio" checked>
+🔒 Κλείδωμα αναλογίας
+</label>
 
-        <label>4. Νέο ύψος (pixels):</label>
-        <input type="number" id="newHeight" value="1536" min="1" required>
+<button type="submit" id="resizeButton" disabled>
+Αλλαγή Ανάλυσης & Λήψη
+</button>
 
-        <button type="submit" id="resizeButton" disabled>
-            Αλλαγή Ανάλυσης & Λήψη
-        </button>
+<div id="warningMsg" class="warning"></div>
+<div id="errorMsg" class="error"></div>
 
-        <div id="errorMsg" class="error"></div>
-    </form>
+</form>
 </div>
 
 <canvas id="imageCanvas" style="display:none;"></canvas>
 
-<script>
-const form = document.getElementById('resizeForm');
-const fileInput = document.getElementById('imageFile');
-const originalDimsSpan = document.getElementById('originalDims');
-const newWidthInput = document.getElementById('newWidth');
-const newHeightInput = document.getElementById('newHeight');
-const resizeButton = document.getElementById('resizeButton');
-const errorMsg = document.getElementById('errorMsg');
-const warningMsg = document.getElementById('warningMsg');
-const presetSizes = document.getElementById('presetSizes');
-const lockRatioCheckbox = document.getElementById('lockRatio');
+<footer>
+<a href="https://codeplaygroundbymyserlis.blogspot.com" target="_blank">
+🔗 https://codeplaygroundbymyserlis.blogspot.com
+</a>
+</footer>
 
+<script>
+const fileInput = document.getElementById('imageFile');
+const originalDims = document.getElementById('originalDims');
+const newWidth = document.getElementById('newWidth');
+const newHeight = document.getElementById('newHeight');
+const resizeButton = document.getElementById('resizeButton');
+const warningMsg = document.getElementById('warningMsg');
+const errorMsg = document.getElementById('errorMsg');
+const presetSizes = document.getElementById('presetSizes');
+const lockRatio = document.getElementById('lockRatio');
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
 
-let imageToResize = null;
-let aspectRatio = 1;
+let img = null;
+let ratio = 1;
 
-// Φόρτωση εικόνας
 fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    errorMsg.textContent = '';
-    warningMsg.textContent = '';
-    originalDimsSpan.textContent = '---';
     resizeButton.disabled = true;
+    warningMsg.textContent = '';
+    errorMsg.textContent = '';
+    originalDims.textContent = '---';
 
+    const file = fileInput.files[0];
     if (!file) return;
-
-    if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
-        errorMsg.textContent = 'Μόνο PNG ή JPEG επιτρέπονται.';
-        fileInput.value = '';
-        return;
-    }
 
     const reader = new FileReader();
     reader.onload = e => {
-        imageToResize = new Image();
-        imageToResize.onload = () => {
-            originalDimsSpan.textContent =
-                `${imageToResize.width} × ${imageToResize.height} px`;
-            aspectRatio = imageToResize.width / imageToResize.height;
+        img = new Image();
+        img.onload = () => {
+            originalDims.textContent = `${img.width} × ${img.height} px`;
+            ratio = img.width / img.height;
             resizeButton.disabled = false;
         };
-        imageToResize.src = e.target.result;
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 });
 
-// Presets
 presetSizes.addEventListener('change', () => {
     if (!presetSizes.value) return;
     const [w, h] = presetSizes.value.split('x');
-    newWidthInput.value = w;
-    newHeightInput.value = h;
+    newWidth.value = w;
+    newHeight.value = h;
     checkUpscale();
 });
 
-// Κλείδωμα αναλογίας
-newWidthInput.addEventListener('input', () => {
-    if (lockRatioCheckbox.checked && imageToResize) {
-        newHeightInput.value = Math.round(newWidthInput.value / aspectRatio);
+newWidth.addEventListener('input', () => {
+    if (lockRatio.checked && img) {
+        newHeight.value = Math.round(newWidth.value / ratio);
     }
     checkUpscale();
 });
 
-newHeightInput.addEventListener('input', () => {
-    if (lockRatioCheckbox.checked && imageToResize) {
-        newWidthInput.value = Math.round(newHeightInput.value * aspectRatio);
+newHeight.addEventListener('input', () => {
+    if (lockRatio.checked && img) {
+        newWidth.value = Math.round(newHeight.value * ratio);
     }
     checkUpscale();
 });
 
-// Προειδοποίηση μεγέθυνσης
 function checkUpscale() {
-    if (!imageToResize) return;
-
-    const w = parseInt(newWidthInput.value);
-    const h = parseInt(newHeightInput.value);
-
-    if (w > imageToResize.width || h > imageToResize.height) {
+    if (!img) return;
+    if (newWidth.value > img.width || newHeight.value > img.height) {
         warningMsg.textContent =
-            '⚠️ Προσοχή: Μεγαλώνεις την εικόνα – πιθανή απώλεια ποιότητας στην εκτύπωση.';
+            '⚠️ Μεγαλώνεις την εικόνα – πιθανή απώλεια ποιότητας.';
     } else {
         warningMsg.textContent = '';
     }
 }
 
-// Resize & download
-form.addEventListener('submit', e => {
+document.getElementById('resizeForm').addEventListener('submit', e => {
     e.preventDefault();
-    errorMsg.textContent = '';
-
-    if (!imageToResize) {
+    if (!img) {
         errorMsg.textContent = 'Δεν έχει φορτωθεί εικόνα.';
         return;
     }
 
-    const w = parseInt(newWidthInput.value);
-    const h = parseInt(newHeightInput.value);
-
-    canvas.width = w;
-    canvas.height = h;
-    ctx.drawImage(imageToResize, 0, 0, w, h);
+    canvas.width = newWidth.value;
+    canvas.height = newHeight.value;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `resized_${w}x${h}.png`;
+        a.download = `resized_${canvas.width}x${canvas.height}.png`;
         a.click();
         URL.revokeObjectURL(url);
-    }, 'image/png');
+    });
 });
 </script>
-
 
 </body>
 </html>
