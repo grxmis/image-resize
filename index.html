@@ -10,7 +10,8 @@
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
         }
@@ -22,8 +23,6 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             width: 90%;
             max-width: 450px;
-            margin: auto;
-            flex: 1;
         }
 
         h2 {
@@ -81,20 +80,6 @@
             margin-top: 10px;
             text-align: center;
         }
-
-        /* Sticky footer */
-        footer {
-            text-align: center;
-            padding: 15px;
-            background-color: #333;
-        }
-
-        footer a {
-            color: yellow;
-            font-weight: bold;
-            text-decoration: none;
-            font-size: 1em;
-        }
     </style>
 </head>
 
@@ -144,101 +129,121 @@
 
 <canvas id="imageCanvas" style="display:none;"></canvas>
 
-<!-- Sticky Footer -->
-<footer>
-    <a href="https://codeplaygroundbymyserlis.blogspot.com" target="_blank">
-        🔗 Επισκεφθείτε το blog μου: https://codeplaygroundbymyserlis.blogspot.com
-    </a>
-</footer>
-
 <script>
-    const form = document.getElementById('resizeForm');
-    const fileInput = document.getElementById('imageFile');
-    const originalDimsSpan = document.getElementById('originalDims');
-    const newWidthInput = document.getElementById('newWidth');
-    const newHeightInput = document.getElementById('newHeight');
-    const resizeButton = document.getElementById('resizeButton');
-    const errorMsg = document.getElementById('errorMsg');
-    const presetSizes = document.getElementById('presetSizes');
+const form = document.getElementById('resizeForm');
+const fileInput = document.getElementById('imageFile');
+const originalDimsSpan = document.getElementById('originalDims');
+const newWidthInput = document.getElementById('newWidth');
+const newHeightInput = document.getElementById('newHeight');
+const resizeButton = document.getElementById('resizeButton');
+const errorMsg = document.getElementById('errorMsg');
+const warningMsg = document.getElementById('warningMsg');
+const presetSizes = document.getElementById('presetSizes');
+const lockRatioCheckbox = document.getElementById('lockRatio');
 
-    const canvas = document.getElementById('imageCanvas');
-    const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('imageCanvas');
+const ctx = canvas.getContext('2d');
 
-    let imageToResize = null;
+let imageToResize = null;
+let aspectRatio = 1;
 
-    // Φόρτωση εικόνας
-    fileInput.addEventListener('change', () => {
-        const file = fileInput.files[0];
-        errorMsg.textContent = '';
-        originalDimsSpan.textContent = '---';
-        resizeButton.disabled = true;
+// Φόρτωση εικόνας
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    errorMsg.textContent = '';
+    warningMsg.textContent = '';
+    originalDimsSpan.textContent = '---';
+    resizeButton.disabled = true;
 
-        if (!file) return;
+    if (!file) return;
 
-        if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
-            errorMsg.textContent = 'Μόνο PNG ή JPEG επιτρέπονται.';
-            fileInput.value = '';
-            return;
-        }
+    if (!file.type.match('image/png') && !file.type.match('image/jpeg')) {
+        errorMsg.textContent = 'Μόνο PNG ή JPEG επιτρέπονται.';
+        fileInput.value = '';
+        return;
+    }
 
-        const reader = new FileReader();
-        reader.onload = e => {
-            imageToResize = new Image();
-            imageToResize.onload = () => {
-                originalDimsSpan.textContent =
-                    `${imageToResize.width} × ${imageToResize.height} px`;
-                resizeButton.disabled = false;
-            };
-            imageToResize.src = e.target.result;
+    const reader = new FileReader();
+    reader.onload = e => {
+        imageToResize = new Image();
+        imageToResize.onload = () => {
+            originalDimsSpan.textContent =
+                `${imageToResize.width} × ${imageToResize.height} px`;
+            aspectRatio = imageToResize.width / imageToResize.height;
+            resizeButton.disabled = false;
         };
-        reader.readAsDataURL(file);
-    });
+        imageToResize.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+});
 
-    // Προτεινόμενες διαστάσεις → inputs
-    presetSizes.addEventListener('change', () => {
-        if (!presetSizes.value) return;
-        const [w, h] = presetSizes.value.split('x');
-        newWidthInput.value = w;
-        newHeightInput.value = h;
-    });
+// Presets
+presetSizes.addEventListener('change', () => {
+    if (!presetSizes.value) return;
+    const [w, h] = presetSizes.value.split('x');
+    newWidthInput.value = w;
+    newHeightInput.value = h;
+    checkUpscale();
+});
 
-    // Resize & download
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        errorMsg.textContent = '';
+// Κλείδωμα αναλογίας
+newWidthInput.addEventListener('input', () => {
+    if (lockRatioCheckbox.checked && imageToResize) {
+        newHeightInput.value = Math.round(newWidthInput.value / aspectRatio);
+    }
+    checkUpscale();
+});
 
-        if (!imageToResize) {
-            errorMsg.textContent = 'Δεν έχει φορτωθεί εικόνα.';
-            return;
-        }
+newHeightInput.addEventListener('input', () => {
+    if (lockRatioCheckbox.checked && imageToResize) {
+        newWidthInput.value = Math.round(newHeightInput.value * aspectRatio);
+    }
+    checkUpscale();
+});
 
-        const w = parseInt(newWidthInput.value);
-        const h = parseInt(newHeightInput.value);
+// Προειδοποίηση μεγέθυνσης
+function checkUpscale() {
+    if (!imageToResize) return;
 
-        if (w <= 0 || h <= 0) {
-            errorMsg.textContent = 'Λάθος διαστάσεις.';
-            return;
-        }
+    const w = parseInt(newWidthInput.value);
+    const h = parseInt(newHeightInput.value);
 
-        canvas.width = w;
-        canvas.height = h;
-        ctx.drawImage(imageToResize, 0, 0, w, h);
+    if (w > imageToResize.width || h > imageToResize.height) {
+        warningMsg.textContent =
+            '⚠️ Προσοχή: Μεγαλώνεις την εικόνα – πιθανή απώλεια ποιότητας στην εκτύπωση.';
+    } else {
+        warningMsg.textContent = '';
+    }
+}
 
-        canvas.toBlob(blob => {
-            if (!blob) {
-                errorMsg.textContent = 'Σφάλμα δημιουργίας αρχείου.';
-                return;
-            }
+// Resize & download
+form.addEventListener('submit', e => {
+    e.preventDefault();
+    errorMsg.textContent = '';
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `resized_${w}x${h}.png`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }, 'image/png');
-    });
+    if (!imageToResize) {
+        errorMsg.textContent = 'Δεν έχει φορτωθεί εικόνα.';
+        return;
+    }
+
+    const w = parseInt(newWidthInput.value);
+    const h = parseInt(newHeightInput.value);
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(imageToResize, 0, 0, w, h);
+
+    canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `resized_${w}x${h}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, 'image/png');
+});
 </script>
+
 
 </body>
 </html>
