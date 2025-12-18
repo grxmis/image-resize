@@ -3,54 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image to A4 Converter</title>
+<title>Μετατροπή εικόνας σε A4</title>
 
 <style>
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f9;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
     margin: 0;
 }
 
 .container {
-    background-color: #fff;
-    padding: 30px;
+    background: #fff;
+    padding: 25px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 450px;
-    margin: auto;
-    flex: 1;
+    width: 100%;
+    max-width: 420px;
 }
 
 h2 {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
-label {
-    display: block;
-    margin-top: 15px;
-    font-weight: bold;
-}
-
-input[type="file"],
-select {
+input[type="file"] {
     width: 100%;
-    padding: 10px;
-    margin-top: 5px;
     margin-bottom: 15px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
 }
 
 button {
     width: 100%;
     padding: 12px;
-    background-color: #007bff;
+    background: #007bff;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -59,35 +47,17 @@ button {
 }
 
 button:disabled {
-    background-color: #9cbddd;
+    background: #9cbddd;
     cursor: not-allowed;
 }
 
-.info-box {
+.info {
     background: #e9ecef;
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 15px;
     font-size: 0.9em;
-}
-
-.warning {
-    color: orange;
     text-align: center;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-footer {
-    text-align: center;
-    padding: 15px;
-    background-color: #333;
-}
-
-footer a {
-    color: yellow;
-    font-weight: bold;
-    text-decoration: none;
 }
 </style>
 </head>
@@ -95,84 +65,57 @@ footer a {
 <body>
 
 <div class="container">
-<h2>📄 Image → A4 Converter</h2>
+<h2>📄 Εικόνα → A4</h2>
 
-<form id="resizeForm">
+<input type="file" id="imageInput" accept="image/png, image/jpeg">
 
-<label>1. Επιλέξτε εικόνα (PNG / JPEG):</label>
-<input type="file" id="imageFile" accept="image/png, image/jpeg" required>
-
-<div class="info-box">
-<strong>Αρχικές διαστάσεις:</strong>
-<span id="originalDims">---</span>
+<div class="info">
+    Αποτέλεσμα: <strong>2480 × 3508 px (A4)</strong><br>
+    ⚠️ Η εικόνα τεντώνεται για να γεμίσει τη σελίδα
 </div>
 
-<label>2. Μέγεθος εξόδου:</label>
-<select id="presetSizes">
-    <option value="2480x3508">A4 – 2480 × 3508 px (Print HQ)</option>
-</select>
-
-<button type="submit" id="resizeButton" disabled>
-Μετατροπή σε A4 & Λήψη
+<button id="convertBtn" disabled>
+Μετατροπή & Λήψη
 </button>
-
-<div class="warning">
-⚠️ Η εικόνα θα τεντωθεί για να γεμίσει Α4 (ενδέχεται παραμόρφωση)
 </div>
 
-</form>
-</div>
-
-<canvas id="imageCanvas" style="display:none;"></canvas>
-
-<footer>
-<a href="https://codeplaygroundbymyserlis.blogspot.com" target="_blank">
-🔗 https://codeplaygroundbymyserlis.blogspot.com
-</a>
-</footer>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
-const fileInput = document.getElementById('imageFile');
-const originalDims = document.getElementById('originalDims');
-const resizeButton = document.getElementById('resizeButton');
-const canvas = document.getElementById('imageCanvas');
+const imageInput = document.getElementById('imageInput');
+const convertBtn = document.getElementById('convertBtn');
+const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-let img = null;
+let img = new Image();
 
-// Φόρτωση εικόνας
-fileInput.addEventListener('change', () => {
-    resizeButton.disabled = true;
-    originalDims.textContent = '---';
-
-    const file = fileInput.files[0];
+// φόρτωση εικόνας
+imageInput.addEventListener('change', () => {
+    convertBtn.disabled = true;
+    const file = imageInput.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = e => {
         img = new Image();
         img.onload = () => {
-            originalDims.textContent = `${img.width} × ${img.height} px`;
-            resizeButton.disabled = false;
+            convertBtn.disabled = false;
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 });
 
-// Μετατροπή σε A4 (STRETCH)
-document.getElementById('resizeForm').addEventListener('submit', e => {
-    e.preventDefault();
-    if (!img) return;
+// μετατροπή σε A4 (STRETCH)
+convertBtn.addEventListener('click', () => {
+    const A4_WIDTH = 2480;
+    const A4_HEIGHT = 3508;
 
-    const targetWidth = 2480;
-    const targetHeight = 3508;
+    canvas.width = A4_WIDTH;
+    canvas.height = A4_HEIGHT;
 
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-
-    // ΕΔΩ γίνεται η παραμόρφωση (stretch)
-    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    // ΕΔΩ γίνεται η μετατροπή / παραμόρφωση
+    ctx.drawImage(img, 0, 0, A4_WIDTH, A4_HEIGHT);
 
     canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
