@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image Resizer (Client-Side)</title>
+<title>Image to A4 Converter</title>
 
 <style>
 body {
@@ -38,7 +38,6 @@ label {
 }
 
 input[type="file"],
-input[type="number"],
 select {
     width: 100%;
     padding: 10px;
@@ -61,6 +60,7 @@ button {
 
 button:disabled {
     background-color: #9cbddd;
+    cursor: not-allowed;
 }
 
 .info-box {
@@ -71,17 +71,11 @@ button:disabled {
     font-size: 0.9em;
 }
 
-.error {
-    color: red;
-    text-align: center;
-    margin-top: 10px;
-}
-
 .warning {
     color: orange;
     text-align: center;
-    margin-top: 5px;
     font-weight: bold;
+    margin-top: 10px;
 }
 
 footer {
@@ -92,8 +86,8 @@ footer {
 
 footer a {
     color: yellow;
-    text-decoration: none;
     font-weight: bold;
+    text-decoration: none;
 }
 </style>
 </head>
@@ -101,42 +95,30 @@ footer a {
 <body>
 
 <div class="container">
-<h2>📷 Image Resizer</h2>
+<h2>📄 Image → A4 Converter</h2>
 
 <form id="resizeForm">
 
 <label>1. Επιλέξτε εικόνα (PNG / JPEG):</label>
-<input type="file" id="imageFile" accept="image/png, image/jpeg">
+<input type="file" id="imageFile" accept="image/png, image/jpeg" required>
 
 <div class="info-box">
 <strong>Αρχικές διαστάσεις:</strong>
 <span id="originalDims">---</span>
 </div>
 
-<label>2. Προτεινόμενες διαστάσεις:</label>
+<label>2. Μέγεθος εξόδου:</label>
 <select id="presetSizes">
-<option value="">-- Χειροκίνητη εισαγωγή --</option>
-<option value="1240x1754">A4 Print – 1240 × 1754</option>
-<option value="2480x3508">A4 Print HQ – 2480 × 3508</option>
+    <option value="2480x3508">A4 – 2480 × 3508 px (Print HQ)</option>
 </select>
 
-<label>3. Νέο πλάτος (px):</label>
-<input type="number" id="newWidth" value="1024" min="1">
-
-<label>4. Νέο ύψος (px):</label>
-<input type="number" id="newHeight" value="1536" min="1">
-
-<label>
-<input type="checkbox" id="lockRatio" checked>
-🔒 Κλείδωμα αναλογίας
-</label>
-
 <button type="submit" id="resizeButton" disabled>
-Αλλαγή Ανάλυσης & Λήψη
+Μετατροπή σε A4 & Λήψη
 </button>
 
-<div id="warningMsg" class="warning"></div>
-<div id="errorMsg" class="error"></div>
+<div class="warning">
+⚠️ Η εικόνα θα τεντωθεί για να γεμίσει Α4 (ενδέχεται παραμόρφωση)
+</div>
 
 </form>
 </div>
@@ -152,23 +134,15 @@ footer a {
 <script>
 const fileInput = document.getElementById('imageFile');
 const originalDims = document.getElementById('originalDims');
-const newWidth = document.getElementById('newWidth');
-const newHeight = document.getElementById('newHeight');
 const resizeButton = document.getElementById('resizeButton');
-const warningMsg = document.getElementById('warningMsg');
-const errorMsg = document.getElementById('errorMsg');
-const presetSizes = document.getElementById('presetSizes');
-const lockRatio = document.getElementById('lockRatio');
 const canvas = document.getElementById('imageCanvas');
 const ctx = canvas.getContext('2d');
 
 let img = null;
-let ratio = 1;
 
+// Φόρτωση εικόνας
 fileInput.addEventListener('change', () => {
     resizeButton.disabled = true;
-    warningMsg.textContent = '';
-    errorMsg.textContent = '';
     originalDims.textContent = '---';
 
     const file = fileInput.files[0];
@@ -179,7 +153,6 @@ fileInput.addEventListener('change', () => {
         img = new Image();
         img.onload = () => {
             originalDims.textContent = `${img.width} × ${img.height} px`;
-            ratio = img.width / img.height;
             resizeButton.disabled = false;
         };
         img.src = e.target.result;
@@ -187,57 +160,28 @@ fileInput.addEventListener('change', () => {
     reader.readAsDataURL(file);
 });
 
-presetSizes.addEventListener('change', () => {
-    if (!presetSizes.value) return;
-    const [w, h] = presetSizes.value.split('x');
-    newWidth.value = w;
-    newHeight.value = h;
-    checkUpscale();
-});
-
-newWidth.addEventListener('input', () => {
-    if (lockRatio.checked && img) {
-        newHeight.value = Math.round(newWidth.value / ratio);
-    }
-    checkUpscale();
-});
-
-newHeight.addEventListener('input', () => {
-    if (lockRatio.checked && img) {
-        newWidth.value = Math.round(newHeight.value * ratio);
-    }
-    checkUpscale();
-});
-
-function checkUpscale() {
-    if (!img) return;
-    if (newWidth.value > img.width || newHeight.value > img.height) {
-        warningMsg.textContent =
-            '⚠️ Μεγαλώνεις την εικόνα – πιθανή απώλεια ποιότητας.';
-    } else {
-        warningMsg.textContent = '';
-    }
-}
-
+// Μετατροπή σε A4 (STRETCH)
 document.getElementById('resizeForm').addEventListener('submit', e => {
     e.preventDefault();
-    if (!img) {
-        errorMsg.textContent = 'Δεν έχει φορτωθεί εικόνα.';
-        return;
-    }
+    if (!img) return;
 
-    canvas.width = newWidth.value;
-    canvas.height = newHeight.value;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const targetWidth = 2480;
+    const targetHeight = 3508;
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    // ΕΔΩ γίνεται η παραμόρφωση (stretch)
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
     canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `resized_${canvas.width}x${canvas.height}.png`;
+        a.download = 'image_A4_2480x3508.png';
         a.click();
         URL.revokeObjectURL(url);
-    });
+    }, 'image/png');
 });
 </script>
 
